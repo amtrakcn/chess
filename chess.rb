@@ -91,20 +91,25 @@ class Pawn < Piece
   end
 
   def valid_moves(pos2)
+    valid = true
     pos2_piece = @board.board[pos2[0]][pos2[1]]
     if self.color == "B"
       if pos2[0] - self.find_piece(self, @board)[0] != @move_dirs_black[0]
+        p "1"
         return false
       end
       if pos2[1] - self.find_piece(self, @board)[1] != @move_dirs_black[1]
+        p "2"
         return false
       end
 
     elsif self.color == "W"
       if pos2[0] - self.find_piece(self, @board)[0] != @move_dirs_white[0]
+        p "3"
         return false
       end
       if pos2[1] - self.find_piece(self, @board)[1] != @move_dirs_white[1]
+        p "4"
         return false
       end
     end
@@ -112,7 +117,7 @@ class Pawn < Piece
     unless @board.board[pos2[0]][pos2[1]].nil?
       return false
     end
-
+    valid
   end
 
   def move
