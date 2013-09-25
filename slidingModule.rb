@@ -30,7 +30,8 @@ module SlidingModule
     end
 
     if clear_path
-      if (!@board.board[pos2[0]][pos2[1]].nil?) && (@board.board[pos2[0]][pos2[1]].color == self.color)
+      if (!@board.board[pos2[0]][pos2[1]].nil?) \
+        && (@board.board[pos2[0]][pos2[1]].color == self.color)
         clear_path = false
       end
     end
