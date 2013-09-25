@@ -1,72 +1,8 @@
 require "colored"
+require "./slidingModule"
+require "./steppingModule"
 
-module SlidingModule
 
-
-  def valid_moves(pos2)
-    #iterate through moves, and call
-    pos1 = self.find_piece(self, @board)
-    clear_path = true
-    #if position is in board, no piece in the way,  then valid
-    clear_path = false unless 0 <= pos2[0] && pos2[0] <= 7 && pos2[1] >= 0 && pos2[1] <= 7
-    #p pos1
-    direction = []
-
-    if pos2[0] == pos1[0]
-      direction[0] = 0
-      direction[1] = (pos2[1] - pos1[1]) / (pos2[1] - pos1[1]).abs
-    elsif pos2[1] == pos1[1]
-      direction[1] = 0
-      direction[0] = (pos2[0] - pos1[0]) / (pos2[0] - pos1[0]).abs
-     else
-       direction[1] = (pos2[1] - pos1[1]) / (pos2[1] - pos1[1]).abs
-       direction[0] = (pos2[0] - pos1[0]) / (pos2[0] - pos1[0]).abs
-    end
-
-    clear_path = false unless valid_dir?(direction[0], direction[1])
-
-    until (pos1[0] == (pos2[0] - direction[0])) && (pos1[1] == (pos2[1] - direction[1]))
-      pos1[0] += direction[0]
-      pos1[1] += direction[1]
-      clear_path = false if !valid_move?(pos1[0], pos1[1])
-    end
-
-    if clear_path
-      if (!@board.board[pos2[0]][pos2[1]].nil?) && (@board.board[pos2[0]][pos2[1]].color == self.color)
-        clear_path = false
-      end
-    end
-
-    return clear_path
-
-  end
-
-  def valid_move?(index1, index2)
-    @board.board[index1][index2].nil?
-
-  end
-
-  def valid_dir?(index1, index2)
-    self.move_dirs.include?([index1, index2])
-  end
-
-end
-
-module SteppingModule
-  def valid_moves(pos2)
-    #iterate through moves, and call
-    pos1 = self.find_piece(self, @board)
-    #if position is in board, no piece in the way,  then valid
-    return false unless 0 <= pos2[0] && pos2[0] <= 7 && pos2[1] >= 0 && pos2[1] <= 7
-    return false unless valid_dir(pos2[0] - pos1[0], pos2[1] - pos1[1])
-    return true
-  end
-
-  def valid_dir?(index1, index2)
-    self.move_dirs.include?([index1, index2])
-  end
-
-end
 
 class Piece
   attr_reader :move_dirs, :color, :board
@@ -91,11 +27,11 @@ end
 class SlidingPiece < Piece
   include SlidingModule
 
-  def moves(steps)
-    move_dirs.map do |pos|
-      pos * steps
-    end
-  end
+  # def moves(steps)
+  #   move_dirs.map do |pos|
+  #     pos * steps
+  #   end
+  # end
 end
 
 class Rook < SlidingPiece
@@ -122,6 +58,7 @@ end
 
 ##################
 
+
 class SteppingPiece < Piece
 
 end
@@ -146,11 +83,42 @@ class Pawn < Piece
   def initialize(color, board, moved = false)
     super(color, board)
     @moved = true
-    @move_dirs_black = [[0, 1]]
-    @move_dirs_white = [[0, -1]]
+    @move_dirs_black = [0, 1]
+    @move_dirs_white = [0, -1]
 
     @attack_dirs_black = [[-1,1], [1,1]]
     @attack_dirs_white = [[-1,-1], [1,-1]]
+  end
+
+  def valid_moves(pos2)
+    pos2_piece = @board.board[pos2[0]][pos2[1]]
+    if self.color == "B"
+      if pos2[0] - self.find_piece(self, @board)[0] != @move_dirs_black[0]
+        return false
+      end
+      if pos2[1] - self.find_piece(self, @board)[1] != @move_dirs_black[1]
+        return false
+      end
+
+    elsif self.color == "W"
+      if pos2[0] - self.find_piece(self, @board)[0] != @move_dirs_white[0]
+        return false
+      end
+      if pos2[1] - self.find_piece(self, @board)[1] != @move_dirs_white[1]
+        return false
+      end
+    end
+
+    unless @board.board[pos2[0]][pos2[1]].nil?
+      return false
+    end
+
+  end
+
+  def move
+  end
+
+  def attack
   end
 end
 
@@ -167,9 +135,9 @@ class Board
   def create_board
     @board = Array.new(8) { Array.new(8) }
 
-    # @board[1].map! do |tile|
-    #   tile = Pawn.new("B", self)
-    # end
+    @board[1].map! do |tile|
+      tile = Pawn.new("B", self)
+    end
 
     @board[6].map! do |tile|
       tile = Pawn.new("W", self)
@@ -324,7 +292,7 @@ a = Player.new("a", "B")
 a.show(gameboard.board)
 #gameboard.move([1,0],[5,5])
 a.show(gameboard.board)
-gameboard.move([0,0], [7,0])
+gameboard.move([1,1], [2,1])
 a.show(gameboard.board)
 
 
