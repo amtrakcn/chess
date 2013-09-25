@@ -1,18 +1,75 @@
-module PieceModule
+require "colored"
+
+module SlidingModule
 
 
-  def valid_moves
+  def valid_moves(pos2)
     #iterate through moves, and call
+    pos1 = self.find_piece(self, @board)
+    clear_path = true
+    #if position is in board, no piece in the way,  then valid
+    clear_path = false unless 0 <= pos2[0] && pos2[0] <= 7 && pos2[1] >= 0 && pos2[1] <= 7
+    #p pos1
+    direction = []
+
+    if pos2[0] == pos1[0]
+      direction[0] = 0
+      direction[1] = (pos2[1] - pos1[1]) / (pos2[1] - pos1[1]).abs
+    elsif pos2[1] == pos1[1]
+      direction[1] = 0
+      direction[0] = (pos2[0] - pos1[0]) / (pos2[0] - pos1[0]).abs
+     else
+       direction[1] = (pos2[1] - pos1[1]) / (pos2[1] - pos1[1]).abs
+       direction[0] = (pos2[0] - pos1[0]) / (pos2[0] - pos1[0]).abs
+    end
+
+    clear_path = false unless valid_dir?(direction[0], direction[1])
+
+    until (pos1[0] == (pos2[0] - direction[0])) && (pos1[1] == (pos2[1] - direction[1]))
+      pos1[0] += direction[0]
+      pos1[1] += direction[1]
+      clear_path = false if !valid_move?(pos1[0], pos1[1])
+    end
+
+    if clear_path
+      if (!@board.board[pos2[0]][pos2[1]].nil?) && (@board.board[pos2[0]][pos2[1]].color == self.color)
+        clear_path = false
+      end
+    end
+
+    return clear_path
+
   end
 
-  def valid_move?(pos)
-    #if position is in board, no piece in the way, false, then valid
-    if 0 <= pos[0] && pos[0] <= 7 && pos[1] >= 0 && pos[1] <= 7
+  def valid_move?(index1, index2)
+    @board.board[index1][index2].nil?
+
   end
+
+  def valid_dir?(index1, index2)
+    self.move_dirs.include?([index1, index2])
+  end
+
+end
+
+module SteppingModule
+  def valid_moves(pos2)
+    #iterate through moves, and call
+    pos1 = self.find_piece(self, @board)
+    #if position is in board, no piece in the way,  then valid
+    return false unless 0 <= pos2[0] && pos2[0] <= 7 && pos2[1] >= 0 && pos2[1] <= 7
+    return false unless valid_dir(pos2[0] - pos1[0], pos2[1] - pos1[1])
+    return true
+  end
+
+  def valid_dir?(index1, index2)
+    self.move_dirs.include?([index1, index2])
+  end
+
 end
 
 class Piece
-  attr_reader :move_dirs
+  attr_reader :move_dirs, :color, :board
   attr_accessor :position
 
   def initialize(color, board)
@@ -21,16 +78,18 @@ class Piece
   end
 
   def find_piece(piece, board)
-    board.each_with_index do |row, idx1|
+    board.board.each_with_index do |row, idx1|
       row.each_with_index do |tile, idx2|
-        return [idx1, idx2] if piece == board[idx1, idx2]
+        return [idx1, idx2] if piece == board.board[idx1][idx2]
       end
     end
+    return nil
   end
 end
 
 
 class SlidingPiece < Piece
+  include SlidingModule
 
   def moves(steps)
     move_dirs.map do |pos|
@@ -40,22 +99,22 @@ class SlidingPiece < Piece
 end
 
 class Rook < SlidingPiece
-  def initialize(color)
-    super(color)
+  def initialize(color, board)
+    super(color, board)
     @move_dirs = [[0, 1], [0, -1], [1, 0], [-1, 0]]
   end
 end
 
 class Bishop < SlidingPiece
-  def initialize(color)
-    super(color)
+  def initialize(color, board)
+    super(color, board)
     @move_dirs = [[1, 1], [-1, 1], [1, -1], [-1, -1]]
   end
 end
 
 class Queen < SlidingPiece
-  def initialize(color)
-    super(color)
+  def initialize(color, board)
+    super(color, board)
     @move_dirs = [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [1, -1], [-1, 1], [-1, -1]]
   end
 
@@ -84,23 +143,57 @@ end
 ###############
 
 class Pawn < Piece
-  def initialize(color)
-    super(color)
-    @move_dirs = [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [1, -1], [-1, 1], [-1, -1]]
+  def initialize(color, board, moved = false)
+    super(color, board)
+    @moved = true
+    @move_dirs_black = [[0, 1]]
+    @move_dirs_white = [[0, -1]]
+
+    @attack_dirs_black = [[-1,1], [1,1]]
+    @attack_dirs_white = [[-1,-1], [1,-1]]
   end
 end
 
 
 
 class Board
+  attr_accessor :board
 
   def initialize
     @board = []
+    create_board
   end
 
   def create_board
     @board = Array.new(8) { Array.new(8) }
+
+    # @board[1].map! do |tile|
+    #   tile = Pawn.new("B", self)
+    # end
+
+    @board[6].map! do |tile|
+      tile = Pawn.new("W", self)
+    end
+
+    @board[0][0] = Rook.new("B", self)
+    @board[0][1] = Knight.new("B", self)
+    @board[0][2] = Bishop.new("B", self)
+    @board[0][3] = Queen.new("B", self)
+    @board[0][4] = King.new("B", self)
+    @board[0][5] = Bishop.new("B", self)
+    @board[0][6] = Knight.new("B", self)
+    @board[0][7] = Rook.new("B", self)
+
+    @board[7][0] = Rook.new("W", self)
+    @board[7][1] = Knight.new("W", self)
+    @board[7][2] = Bishop.new("W", self)
+    @board[7][3] = Queen.new("W", self)
+    @board[7][4] = King.new("W", self)
+    @board[7][5] = Bishop.new("W", self)
+    @board[7][6] = Knight.new("W", self)
+    @board[7][7] = Rook.new("W", self)
   end
+
 
   def check?(color)
   end
@@ -108,30 +201,131 @@ class Board
   def checkmate?(color)
   end
 
-  def [](pos)
-    @board[pos[0]][pos[1]]
-  end
+  # def [](x, y)
+  #   @board[x][y]
+  # end
 
   def move(pos1, pos2)
-    # if valid_move?
-    @board[pos1], @board[pos2] = @board[pos2], @board[pos1]
+    # if valid_move? && !check?
+    piece = board[pos1[0]][pos1[1]]
+
+    if piece.valid_moves(pos2)
+      @board[pos1[0]][pos1[1]], @board[pos2[0]][pos2[1]] = nil, @board[pos1[0]][pos1[1]]
+    end
   end
 end
 
 class Game
 
+  def initialize
+    game_result = false
+    gameboard = Board.new
+    player1 = Player.new("player1")
+
+
+  end
+
+  def play
+    until game_result
+      player1.show(gameboard.board)
+      game_result = true
+    end
+  end
+
 end
 
 class Player
-  def initialize(name)
+  def initialize(name, color)
     @name = name
+    @color = color
   end
 
   def show(board)
-    #prints board
+    syms = {
+      WKi: "\u2654",
+      WQ: "\u2655",
+      WR: "\u2656",
+      WB: "\u2657",
+      WKn: "\u2658",
+      WP: "\u2659",
+      BKi: "\u265A",
+      BQ: "\u265B",
+      BR: "\u265C",
+      BB: "\u265D",
+      BKn: "\u265E",
+      BP: "\u265F"
+    }
+
+    board.each do |row|
+      row.each do |piece|
+
+        case piece
+        when nil
+          print " "
+        when King
+          if piece.color == "B"
+            print syms[:WKi].encode("UTF-8")
+          else
+            print syms[:BKi].encode("UTF-8")
+          end
+        when Queen
+          if piece.color == "B"
+            print syms[:WQ].encode("UTF-8")
+          else
+            print syms[:BQ].encode("UTF-8")
+          end
+        when Rook
+          if piece.color == "B"
+            print syms[:WR].encode("UTF-8")
+          else
+            print syms[:BR].encode("UTF-8")
+          end
+        when Bishop
+          if piece.color == "B"
+            print syms[:WB].encode("UTF-8")
+          else
+            print syms[:BB].encode("UTF-8")
+          end
+        when Knight
+          if piece.color == "B"
+            print syms[:WKn].encode("UTF-8")
+          else
+            print syms[:BKn].encode("UTF-8")
+          end
+        when Pawn
+          if piece.color == "B"
+            print syms[:WP].encode("UTF-8")
+          else
+            print syms[:BP].encode("UTF-8")
+          end
+        end
+        print " "
+
+      end
+      print "\n"
+    end
+    print "\n"
   end
 
   def user_input
+    puts "Please input the origin: "
+    gets.chomp
+    puts "Please input the destination: "
+    gets.chomp
 
   end
 end
+
+#if $PROGRAM_NAME == __FILE__
+
+
+gameboard = Board.new
+a = Player.new("a", "B")
+a.show(gameboard.board)
+#gameboard.move([1,0],[5,5])
+a.show(gameboard.board)
+gameboard.move([0,0], [7,0])
+a.show(gameboard.board)
+
+
+  #end
