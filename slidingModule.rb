@@ -1,3 +1,4 @@
+require 'debugger'
 module SlidingModule
 
 
@@ -9,7 +10,7 @@ module SlidingModule
     clear_path = false unless 0 <= pos2[0] && pos2[0] <= 7 && pos2[1] >= 0 && pos2[1] <= 7
     #p pos1
     direction = []
-
+    #debugger
     if pos2[0] == pos1[0]
       direction[0] = 0
       direction[1] = (pos2[1] - pos1[1]) / (pos2[1] - pos1[1]).abs
@@ -21,11 +22,18 @@ module SlidingModule
        direction[0] = (pos2[0] - pos1[0]) / (pos2[0] - pos1[0]).abs
     end
 
+    if !self.move_dirs.include?(direction)
+      return false
+    end
+
     clear_path = false unless valid_dir?(direction[0], direction[1])
 
     until (pos1[0] == (pos2[0] - direction[0])) && (pos1[1] == (pos2[1] - direction[1]))
       pos1[0] += direction[0]
       pos1[1] += direction[1]
+
+      break if pos1[0] < 0 || pos1[1] < 0 || pos1[0] > 7 || pos1[1] > 7
+
       clear_path = false if !valid_move?(pos1[0], pos1[1])
     end
 
@@ -41,6 +49,7 @@ module SlidingModule
   end
 
   def valid_move?(index1, index2)
+
     @board.board[index1][index2].nil?
 
   end
